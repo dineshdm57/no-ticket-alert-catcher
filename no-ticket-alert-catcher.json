@@ -1,0 +1,217 @@
+{
+  "created": "1745732110651",
+  "updated": "1745732110652",
+  "name": "no-ticket-alert-catcher",
+  "tags": [],
+  "services": [],
+  "domains": [],
+  "template": {
+    "displayName": "no-ticket-alert-catcher",
+    "trigger": {
+      "name": "trigger",
+      "valid": true,
+      "displayName": "Every Hour",
+      "type": "TRIGGER",
+      "settings": {
+        "blockName": "@openops/block-schedule",
+        "blockVersion": "~0.1.5",
+        "blockType": "OFFICIAL",
+        "packageType": "REGISTRY",
+        "input": {
+          "run_on_weekends": true
+        },
+        "inputUiInfo": {
+          "customizedInputs": {}
+        },
+        "triggerName": "every_hour"
+      },
+      "nextAction": {
+        "name": "step_1",
+        "type": "BLOCK",
+        "valid": false,
+        "settings": {
+          "input": {
+            "url": "https://api.datadoghq.com/api/v2/alerts",
+            "body": {},
+            "method": null,
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "{{API_KEY}}"
+            },
+            "timeout": null,
+            "failsafe": false,
+            "body_type": "none",
+            "use_proxy": false,
+            "queryParams": {
+              "end ": "current time",
+              "start": "current time minus 1 hour"
+            },
+            "proxy_settings": {}
+          },
+          "blockName": "@openops/block-http",
+          "blockType": "OFFICIAL",
+          "actionName": "send_request",
+          "inputUiInfo": {
+            "customizedInputs": {}
+          },
+          "packageType": "REGISTRY",
+          "blockVersion": "~0.5.1",
+          "errorHandlingOptions": {
+            "retryOnFailure": {
+              "value": false
+            },
+            "continueOnFailure": {
+              "value": false
+            }
+          }
+        },
+        "nextAction": {
+          "name": "step_2",
+          "type": "LOOP_ON_ITEMS",
+          "valid": true,
+          "settings": {
+            "items": "ALERT Output from step 02",
+            "inputUiInfo": {
+              "customizedInputs": {}
+            }
+          },
+          "nextAction": {
+            "name": "step_6",
+            "type": "BLOCK",
+            "valid": true,
+            "settings": {
+              "input": {},
+              "blockName": "@openops/block-end-flow",
+              "blockType": "OFFICIAL",
+              "actionName": "end_workflow",
+              "inputUiInfo": {
+                "customizedInputs": {}
+              },
+              "packageType": "REGISTRY",
+              "blockVersion": "~0.0.1",
+              "errorHandlingOptions": {
+                "retryOnFailure": {
+                  "value": false
+                },
+                "continueOnFailure": {
+                  "value": false
+                }
+              }
+            },
+            "displayName": "End Workflow"
+          },
+          "displayName": "Loop on Items",
+          "firstLoopAction": {
+            "name": "step_3",
+            "type": "BLOCK",
+            "valid": true,
+            "settings": {
+              "input": {
+                "url": "https://your-jira-instance.atlassian.net/rest/api/2/search",
+                "body": {},
+                "method": "GET",
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Authorization": "Basic {{JIRA_TOKEN}}"
+                },
+                "timeout": null,
+                "failsafe": false,
+                "body_type": "none",
+                "use_proxy": false,
+                "queryParams": {
+                  "jql": "text ~ \"{{item.alert_id}}\""
+                },
+                "proxy_settings": {}
+              },
+              "blockName": "@openops/block-http",
+              "blockType": "OFFICIAL",
+              "actionName": "send_request",
+              "inputUiInfo": {
+                "customizedInputs": {}
+              },
+              "packageType": "REGISTRY",
+              "blockVersion": "~0.5.1",
+              "errorHandlingOptions": {
+                "retryOnFailure": {
+                  "value": false
+                },
+                "continueOnFailure": {
+                  "value": false
+                }
+              }
+            },
+            "nextAction": {
+              "name": "step_4",
+              "type": "BRANCH",
+              "valid": true,
+              "settings": {
+                "conditions": [
+                  [
+                    {
+                      "operator": "NUMBER_IS_EQUAL_TO",
+                      "firstValue": "issues.length from Step 4 output",
+                      "secondValue": "0"
+                    }
+                  ]
+                ],
+                "inputUiInfo": {
+                  "customizedInputs": {}
+                }
+              },
+              "displayName": "Condition",
+              "onSuccessAction": {
+                "name": "step_5",
+                "type": "BLOCK",
+                "valid": false,
+                "settings": {
+                  "input": {
+                    "auth": null,
+                    "file": null,
+                    "text": {
+                      "text": "\"⚠️ Alert fired but no ticket created.\n Alert name: {{alertName}}\n Time: {{alertTime}}\n Please investigate.\""
+                    },
+                    "blocks": {},
+                    "threadTs": null,
+                    "username": null,
+                    "headerText": {
+                      "headerText": null
+                    },
+                    "conversationId": null,
+                    "blockKitEnabled": false
+                  },
+                  "blockName": "@openops/block-slack",
+                  "blockType": "OFFICIAL",
+                  "actionName": "send_slack_message",
+                  "inputUiInfo": {
+                    "customizedInputs": {}
+                  },
+                  "packageType": "REGISTRY",
+                  "blockVersion": "~0.5.2",
+                  "errorHandlingOptions": {
+                    "retryOnFailure": {
+                      "value": false
+                    },
+                    "continueOnFailure": {
+                      "value": false
+                    }
+                  }
+                },
+                "displayName": "Send Message"
+              }
+            },
+            "displayName": "Send HTTP request"
+          }
+        },
+        "displayName": "Fetch Recent Alerts"
+      }
+    },
+    "valid": false,
+    "description": ""
+  },
+  "blocks": [
+    "@openops/block-schedule",
+    "@openops/block-http",
+    "@openops/block-slack",
+    "@openops/block-end-flow"
+  ]
+}
